@@ -10,10 +10,10 @@ pipeline {
     }
 
     environment {
-        DEV_PROJECT = "youruser-books-dev"
-        STAGE_PROJECT = "youruser-books-stage"
-        APP_GIT_URL = "https://github.com/youruser/DO288-apps"
-        NEXUS_SERVER = "http://nexus-common.apps.cluster.domain.example.com/repository/nodejs"
+        DEV_PROJECT = "levi-khulaifi-books-dev"
+        STAGE_PROJECT = "levi-khulaifi-books-stage"
+        APP_GIT_URL = "https://github.com/levikhulaifi/DO288-apps"
+        NEXUS_SERVER = "http://nexus-common.apps.ap45.prod.nextcle.com/repository/nodejs"
 
         // DO NOT CHANGE THE GLOBAL VARS BELOW THIS LINE
         APP_NAME = "books"
@@ -50,6 +50,13 @@ pipeline {
         stage('Launch new app in DEV env') {
             steps {
                 echo '### Cleaning existing resources in DEV env ###'
+                sh '''
+                        oc project ${DEV_PROJECT}
+                        oc new-app --as-deployment-config --name books nodejs:12~${APP_GIT_URL} \
+                        --build-env npm_config_registry=${NEXUS_SERVER} \
+                        --context-dir ${APP_NAME}
+                        oc expose svc/${APP_NAME}                
+                   '''
                 sh '''
                         oc project ${DEV_PROJECT}
                         oc delete all -l app=${APP_NAME}
@@ -113,6 +120,11 @@ pipeline {
         stage('Deploy to Staging Env') {
             steps {
                 echo '### Cleaning existing resources in Staging ###'
+                sh '''
+                oc project ${STAGE_PROJECT}
+                oc new-app --as-deployment-config --name books -i books:stage
+                oc expose svc/${APP_NAME}
+                '''
                 sh '''
                         oc project ${STAGE_PROJECT}
                         oc delete all -l app=${APP_NAME}
